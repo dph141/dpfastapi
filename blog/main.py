@@ -1,22 +1,24 @@
 from fastapi import FastAPI,Depends,status,Response,HTTPException
 from schemas import Blog
-from database import engine,SessionLocal
+from database import engine,SessionLocal,get_db
 import schemas, models
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
 from typing import List
+from routers import blog
 from hashing import Hash
 
 
 app = FastAPI()
 
 models.Base.metadata.create_all(engine)
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+app.include_router(blog.router)
+# def get_db():
+#     db = SessionLocal()
+#     try:
+#         yield db
+#     finally:
+#         db.close()
 
 
 @app.post('/blog',status_code=status.HTTP_201_CREATED,tags=['blogs'])
@@ -27,10 +29,10 @@ def create(request:Blog, db:Session=Depends(get_db)):
     db.refresh(new_blog)
     return new_blog
 
-@app.get('/blog',response_model=List[schemas.ShowBlog],tags=['blogs'])
-def all(db:Session=Depends((get_db))):
-    blogs = db.query(models.Blog).all()
-    return blogs
+# @app.get('/blog',response_model=List[schemas.ShowBlog],tags=['blogs'])
+# def all(db:Session=Depends((get_db))):
+#     blogs = db.query(models.Blog).all()
+#     return blogs
 
 @app.get('/blog/{id}',status_code=200, response_model=schemas.ShowBlog,tags=['blogs'])
 def show(id,response:Response, db:Session=Depends(get_db)):
